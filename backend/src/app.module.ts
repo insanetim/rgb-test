@@ -1,4 +1,5 @@
 import { ClientsModule } from '@modules/clients/clients.module';
+import { DealsModule } from '@modules/deals/deals.module';
 import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_PIPE } from '@nestjs/core';
@@ -11,6 +12,7 @@ import { PrismaModule } from '@prisma/prisma.module';
     }),
     PrismaModule,
     ClientsModule,
+    DealsModule,
   ],
   controllers: [],
   providers: [
