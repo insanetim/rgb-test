@@ -1,6 +1,8 @@
-import { Module } from '@nestjs/common';
+import { ClientsModule } from '@modules/clients/clients.module';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from './prisma/prisma.module';
+import { APP_PIPE } from '@nestjs/core';
+import { PrismaModule } from '@prisma/prisma.module';
 
 @Module({
   imports: [
@@ -8,8 +10,21 @@ import { PrismaModule } from './prisma/prisma.module';
       isGlobal: true,
     }),
     PrismaModule,
+    ClientsModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_PIPE,
+      useValue: new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+      }),
+    },
+  ],
 })
 export class AppModule {}
