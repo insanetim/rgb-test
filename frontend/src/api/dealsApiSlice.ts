@@ -4,8 +4,8 @@ import {
   DealsQuery,
   PaginatedResponse,
   UpdateDeal,
-} from "@/types"
-import { baseApi } from "./baseApi"
+} from "@/types";
+import { baseApi } from "./baseApi";
 
 const dealsApiSlice = baseApi.injectEndpoints({
   endpoints: builder => ({
@@ -32,14 +32,17 @@ const dealsApiSlice = baseApi.injectEndpoints({
     }),
 
     // PATCH /deals/:id - Update deal
-    updateDeal: builder.mutation<Deal, { id: Deal["id"] } & UpdateDeal>({
-      query: ({ id, ...patch }) => ({
+    updateDeal: builder.mutation<
+      Deal,
+      { id: Deal["id"]; clientId: Deal["clientId"] } & UpdateDeal
+    >({
+      query: ({ id, clientId, ...patch }) => ({
         url: `deals/${id}`,
         method: "PATCH",
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: "Client", id },
+      invalidatesTags: (result, error, { clientId }) => [
+        { type: "Client", id: clientId },
         "DealsList",
       ],
     }),
@@ -49,7 +52,7 @@ const dealsApiSlice = baseApi.injectEndpoints({
       void,
       { id: Deal["id"]; clientId: Deal["clientId"] }
     >({
-      query: id => ({
+      query: ({ id }) => ({
         url: `deals/${id}`,
         method: "DELETE",
       }),

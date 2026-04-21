@@ -4,6 +4,8 @@ import {
   useDeleteClientMutation,
   useGetClientQuery,
 } from "@/api/clientsApiSlice"
+import { useDeleteDealMutation } from "@/api/dealsApiSlice"
+import { CreateDealDialog } from "@/components/CreateDealDialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,7 +25,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { UpdateClientDialog } from "@/components/UpdateClientDialog"
+import { UpdateDealDialog } from "@/components/UpdateDealDialog"
 import showToast from "@/services/toast"
+import type { Deal } from "@/types"
 import { getErrorMessage } from "@/utils/getErrorMessage"
 import {
   ArrowLeft,
@@ -32,6 +36,7 @@ import {
   Edit,
   Mail,
   Phone,
+  Plus,
   Trash2,
   User,
 } from "lucide-react"
@@ -44,9 +49,13 @@ export default function ClientDetailPage() {
   const clientId = params.id as string
   const router = useRouter()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isCreateDealDialogOpen, setIsCreateDealDialogOpen] = useState(false)
+  const [isEditDealDialogOpen, setIsEditDealDialogOpen] = useState(false)
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
 
   const { data: client, isLoading, error } = useGetClientQuery(clientId)
   const [deleteClient] = useDeleteClientMutation()
+  const [deleteDeal] = useDeleteDealMutation()
 
   if (isLoading) {
     return (
@@ -105,6 +114,21 @@ export default function ClientDetailPage() {
         showToast.error(getErrorMessage(error))
       }
     }
+  }
+
+  const handleDeleteDeal = async (deal: Deal) => {
+    if (confirm("Are you sure you want to delete this deal?")) {
+      try {
+        await deleteDeal({ id: deal.id, clientId: deal.clientId }).unwrap()
+      } catch (error) {
+        showToast.error(getErrorMessage(error))
+      }
+    }
+  }
+
+  const openEditDealDialog = (deal: Deal) => {
+    setSelectedDeal(deal)
+    setIsEditDealDialogOpen(true)
   }
 
   return (
@@ -221,10 +245,18 @@ export default function ClientDetailPage() {
       {/* Deals Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Deals</CardTitle>
-          <CardDescription>
-            All deals associated with this client
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Deals</CardTitle>
+              <CardDescription>
+                All deals associated with this client
+              </CardDescription>
+            </div>
+            <Button onClick={() => setIsCreateDealDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Deal
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {client.deals.length === 0 ? (
@@ -243,6 +275,7 @@ export default function ClientDetailPage() {
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -276,6 +309,24 @@ export default function ClientDetailPage() {
                         {formatDate(deal.createdAt)}
                       </div>
                     </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDealDialog(deal)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteDeal(deal)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -288,6 +339,18 @@ export default function ClientDetailPage() {
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         client={client}
+      />
+
+      <CreateDealDialog
+        isOpen={isCreateDealDialogOpen}
+        onOpenChange={setIsCreateDealDialogOpen}
+        clientId={clientId}
+      />
+
+      <UpdateDealDialog
+        isOpen={isEditDealDialogOpen}
+        onOpenChange={setIsEditDealDialogOpen}
+        deal={selectedDeal}
       />
     </div>
   )
