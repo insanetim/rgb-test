@@ -38,13 +38,22 @@ import {
   Users,
 } from "lucide-react"
 import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 export default function ClientsPage() {
-  const [page, setPage] = useState(1)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const page = parseInt(searchParams.get("page") || "1", 10)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("page", newPage.toString())
+    router.push(`?${params.toString()}`)
+  }
 
   const { data: clientsData, isLoading, error } = useGetClientsQuery({ page })
   const [deleteClient] = useDeleteClientMutation()
@@ -53,6 +62,11 @@ export default function ClientsPage() {
     if (confirm("Are you sure you want to delete this client?")) {
       try {
         await deleteClient(id).unwrap()
+
+        // Check if we need to navigate to previous page
+        if (clientsData?.data && clientsData.data.length === 1 && page > 1) {
+          handlePageChange(page - 1)
+        }
       } catch (error) {
         showToast.error(getErrorMessage(error))
       }
@@ -255,7 +269,7 @@ export default function ClientsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage(page - 1)}
+                  onClick={() => handlePageChange(page - 1)}
                   disabled={page <= 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -264,7 +278,7 @@ export default function ClientsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage(page + 1)}
+                  onClick={() => handlePageChange(page + 1)}
                   disabled={page >= clientsData.meta.totalPages}
                 >
                   Next

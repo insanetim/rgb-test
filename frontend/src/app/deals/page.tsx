@@ -42,14 +42,17 @@ import {
   Trash2,
   X,
 } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 export default function DealsPage() {
-  const [page, setPage] = useState(1)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const page = parseInt(searchParams.get("page") || "1", 10)
+  const clientIdFilter = searchParams.get("clientId") || ""
+  const statusFilter = searchParams.get("status") as DealStatus | null
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
-  const [clientIdFilter, setClientIdFilter] = useState("")
-  const [statusFilter, setStatusFilter] = useState<DealStatus | null>(null)
 
   const {
     data: dealsData,
@@ -63,10 +66,60 @@ export default function DealsPage() {
   const { data: clientsData } = useGetClientsQuery({})
   const [deleteDeal] = useDeleteDealMutation()
 
+  const updateURL = (updates: {
+    page?: number
+    clientId?: string
+    status?: string | null
+  }) => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    if (updates.page !== undefined) {
+      params.set("page", updates.page.toString())
+    }
+    if (updates.clientId !== undefined) {
+      if (updates.clientId) {
+        params.set("clientId", updates.clientId)
+      } else {
+        params.delete("clientId")
+      }
+    }
+    if (updates.status !== undefined) {
+      if (updates.status) {
+        params.set("status", updates.status)
+      } else {
+        params.delete("status")
+      }
+    }
+
+    router.push(`?${params.toString()}`)
+  }
+
+  const handlePageChange = (newPage: number) => {
+    updateURL({ page: newPage })
+  }
+
+  const handleClientIdFilter = (value: string) => {
+    updateURL({ clientId: value, page: 1 })
+  }
+
+  const handleStatusFilter = (value: string | null) => {
+    const statusValue = value === "" || value === null ? null : value
+    updateURL({ status: statusValue, page: 1 })
+  }
+
+  const clearFilters = () => {
+    updateURL({ clientId: "", status: null, page: 1 })
+  }
+
   const handleDeleteDeal = async (deal: Deal) => {
     if (confirm("Are you sure you want to delete this deal?")) {
       try {
         await deleteDeal({ id: deal.id, clientId: deal.clientId }).unwrap()
+
+        // Check if we need to navigate to previous page
+        if (dealsData?.data && dealsData.data.length === 1 && page > 1) {
+          handlePageChange(page - 1)
+        }
       } catch (error) {
         showToast.error(getErrorMessage(error))
       }
@@ -190,14 +243,20 @@ export default function DealsPage() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="clientId">Client ID</Label>
-              <Select value={clientIdFilter} onValueChange={(value) => setClientIdFilter(value || "")}>
+              <Select
+                value={clientIdFilter}
+                onValueChange={value => handleClientIdFilter(value || "")}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select client" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All Clients</SelectItem>
                   {clientsData?.data?.map(client => (
-                    <SelectItem key={client.id} value={client.id}>
+                    <SelectItem
+                      key={client.id}
+                      value={client.id}
+                    >
                       {client.name} ({client.id})
                     </SelectItem>
                   ))}
@@ -208,9 +267,7 @@ export default function DealsPage() {
               <Label htmlFor="status">Status</Label>
               <Select
                 value={statusFilter || ""}
-                onValueChange={value =>
-                  setStatusFilter(value === "" ? null : value as DealStatus)
-                }
+                onValueChange={value => handleStatusFilter(value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -218,9 +275,7 @@ export default function DealsPage() {
                 <SelectContent>
                   <SelectItem value="">All Statuses</SelectItem>
                   <SelectItem value="NEW">New</SelectItem>
-                  <SelectItem value="IN_PROGRESS">
-                    In Progress
-                  </SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                   <SelectItem value="WON">Won</SelectItem>
                   <SelectItem value="LOST">Lost</SelectItem>
                 </SelectContent>
@@ -230,10 +285,7 @@ export default function DealsPage() {
               <div className="flex items-end">
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setClientIdFilter("")
-                    setStatusFilter(null)
-                  }}
+                  onClick={clearFilters}
                   className="w-auto"
                 >
                   <X className="mr-2 h-4 w-4" />
@@ -341,7 +393,7 @@ export default function DealsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage(page - 1)}
+                  onClick={() => handlePageChange(page - 1)}
                   disabled={page <= 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -350,7 +402,7 @@ export default function DealsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage(page + 1)}
+                  onClick={() => handlePageChange(page + 1)}
                   disabled={page >= dealsData.meta.totalPages}
                 >
                   Next
