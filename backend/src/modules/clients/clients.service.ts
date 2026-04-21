@@ -52,6 +52,9 @@ export class ClientsService {
 
     const client = await this.prisma.client.findUnique({
       where: { id },
+      include: {
+        deals: true,
+      },
     });
 
     if (!client) {

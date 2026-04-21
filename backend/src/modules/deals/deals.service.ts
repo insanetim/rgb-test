@@ -28,9 +28,6 @@ export class DealsService {
         ...data,
         status: data.status || DealStatus.NEW,
       },
-      include: {
-        client: true,
-      },
     });
   }
 
@@ -53,9 +50,6 @@ export class DealsService {
         where,
         skip,
         take: limit,
-        include: {
-          client: true,
-        },
         orderBy: {
           createdAt: 'desc',
         },
@@ -98,9 +92,6 @@ export class DealsService {
     return await this.prisma.deal.update({
       where: { id },
       data,
-      include: {
-        client: true,
-      },
     });
   }
 
