@@ -23,7 +23,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import showToast from "@/services/toast"
 import type { Client } from "@/types"
+import { getErrorMessage } from "@/utils/getErrorMessage"
 import {
   Calendar,
   ChevronLeft,
@@ -35,6 +37,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react"
+import Link from "next/link"
 import { useState } from "react"
 
 export default function ClientsPage() {
@@ -51,7 +54,7 @@ export default function ClientsPage() {
       try {
         await deleteClient(id).unwrap()
       } catch (error) {
-        console.error("Failed to delete client:", error)
+        showToast.error(getErrorMessage(error))
       }
     }
   }
@@ -186,7 +189,14 @@ export default function ClientsPage() {
               ) : (
                 clients.map(client => (
                   <TableRow key={client.id}>
-                    <TableCell className="font-medium">{client.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/clients/${client.id}`}
+                        className="hover:text-primary hover:underline transition-colors"
+                      >
+                        {client.name}
+                      </Link>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground" />
